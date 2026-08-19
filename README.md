@@ -7,7 +7,7 @@ Portable Agent Skills for flowsheet workflows.
 - `prommis-wrap` — Wrap flowsheets for Flowsheet Inspector.
 - `prommis-change-value` — Change flowsheet parameter values.
 - `prommis-help-imports` — Find Python import paths.
-- `prommis-explain-diagnostics` — Run and explain diagnostics.
+- `prommis-explain-diagnostics` — Run and explain flowsheet diagnostics.
 
 ## Install
 
