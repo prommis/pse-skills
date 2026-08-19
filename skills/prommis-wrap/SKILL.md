@@ -1,10 +1,8 @@
 ---
 name: prommis-wrap
-description: "Wraps a raw PrOMMiS/IDAES flowsheet with FlowsheetRunner and @FS.step decorators so it works with the Flowsheet Inspector VS Code extension. TRIGGER when: user says wrap, flowsheet missing decorators, FlowsheetRunner not set up, flowsheet not showing in VS Code, Flowsheet Inspector not picking up flowsheet, raw or unwrapped flowsheet. DO NOT TRIGGER when: flowsheet already wrapped, user wants to run or solve it, user wants to change a value or fix an import."
+description: "Wraps a raw flowsheet with FlowsheetRunner and @FS.step decorators so it works with the Flowsheet Inspector VS Code extension. TRIGGER when: user says wrap, flowsheet missing decorators, FlowsheetRunner not set up, flowsheet not showing in VS Code, Flowsheet Inspector not picking up flowsheet, raw or unwrapped flowsheet. DO NOT TRIGGER when: flowsheet already wrapped, user wants to run or solve it, user wants to change a value or fix an import."
 metadata:
   author: Tanushree Subramanian
-  version: "1.1"
-  compatibility: "Use prommis-dev for original flowsheets importing from idaes_examples; otherwise use idaes-fi for original flowsheets importing from prommis, idaes_fi, or idaes."
 ---
 
 # PrOMMiS Flowsheet Wrapping

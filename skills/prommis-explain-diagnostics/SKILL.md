@@ -1,6 +1,6 @@
 ---
 name: prommis-explain-diagnostics
-description: "Run a named PrOMMiS, IDAES, WaterTAP, or Pyomo wrapped flowsheet, capture its IPOPT and IDAES DiagnosticsToolbox results, explain the important findings in plain language, and guide the user through one diagnostic or fix at a time. Use when a user asks to diagnose a flowsheet, investigate an IPOPT failure or infeasible solve, understand DiagnosticsToolbox warnings, or continue a diagnostic next step."
+description: "Run a named wrapped PrOMMiS, IDAES, or WaterTAP flowsheet, or a wrapped Pyomo model; capture its IPOPT and IDAES DiagnosticsToolbox results; explain the important findings in plain language; and guide the user through one diagnostic or fix at a time. Use when a user asks to diagnose a model, investigate an IPOPT failure or infeasible solve, understand DiagnosticsToolbox warnings, or continue a diagnostic next step."
 metadata:
   author: "Tanushree Subramanian"
 ---
