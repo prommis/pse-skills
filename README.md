@@ -8,7 +8,7 @@ Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license 
 # PSE Skills
 
 This repository contains portable Agent Skills for Process Systems
-Engineering workflows, including PrOMMiS, IDAES, and Flowsheet Inspector.
+Engineering workflows.
 
 ## Skills
 
