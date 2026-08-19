@@ -1,6 +1,6 @@
 ﻿# PSE Skills
 
-Portable Agent Skills for PrOMMiS and IDAES flowsheet workflows.
+Portable Agent Skills for flowsheet workflows.
 
 ## Skills
 
