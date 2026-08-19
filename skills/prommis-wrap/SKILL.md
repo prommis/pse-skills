@@ -3,7 +3,15 @@ name: prommis-wrap
 description: "Wraps a raw flowsheet with FlowsheetRunner and @FS.step decorators so it works with the Flowsheet Inspector VS Code extension. TRIGGER when: user says wrap, flowsheet missing decorators, FlowsheetRunner not set up, flowsheet not showing in VS Code, Flowsheet Inspector not picking up flowsheet, raw or unwrapped flowsheet. DO NOT TRIGGER when: flowsheet already wrapped, user wants to run or solve it, user wants to change a value or fix an import."
 metadata:
   author: Tanushree Subramanian
+license: LICENSE.md
 ---
+
+<!--
+“PrOMMiS” was produced under the DOE Process Optimization and Modeling for Minerals Sustainability
+(“PrOMMiS”) initiative, and is copyright (c) 2023-2026 by the software owners: The Regents of the
+University of California, through Lawrence Berkeley National Laboratory, et al. All rights reserved.
+Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license information.
+-->
 
 # PrOMMiS Flowsheet Wrapping
 

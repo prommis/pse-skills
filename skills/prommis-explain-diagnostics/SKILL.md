@@ -3,7 +3,15 @@ name: prommis-explain-diagnostics
 description: "Run a named wrapped PrOMMiS, IDAES, or WaterTAP flowsheet, or a wrapped Pyomo model; capture its IPOPT and IDAES DiagnosticsToolbox results; explain the important findings in plain language; and guide the user through one diagnostic or fix at a time. Use when a user asks to diagnose a model, investigate an IPOPT failure or infeasible solve, understand DiagnosticsToolbox warnings, or continue a diagnostic next step."
 metadata:
   author: "Tanushree Subramanian"
+license: LICENSE.md
 ---
+
+<!--
+“PrOMMiS” was produced under the DOE Process Optimization and Modeling for Minerals Sustainability
+(“PrOMMiS”) initiative, and is copyright (c) 2023-2026 by the software owners: The Regents of the
+University of California, through Lawrence Berkeley National Laboratory, et al. All rights reserved.
+Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license information.
+-->
 
 # PrOMMiS Explain Diagnostics
 

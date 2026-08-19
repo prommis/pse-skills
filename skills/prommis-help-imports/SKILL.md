@@ -3,7 +3,15 @@ name: prommis-help-imports
 description: "Returns the exact import statement for any PrOMMiS, IDAES, Pyomo, or Flowsheet Inspector module. TRIGGER when: user gets ImportError or ModuleNotFoundError, doesn't know import path, asks how to import LeachingTrain, FlowsheetRunner, DiagnosticsToolbox, Flash, Mixer, or any unit model or property package, asks where a class lives. DO NOT TRIGGER when: user wants to wrap a flowsheet, change a value, or debug a solver error."
 metadata:
   author: Tanushree Subramanian
+license: LICENSE.md
 ---
+
+<!--
+“PrOMMiS” was produced under the DOE Process Optimization and Modeling for Minerals Sustainability
+(“PrOMMiS”) initiative, and is copyright (c) 2023-2026 by the software owners: The Regents of the
+University of California, through Lawrence Berkeley National Laboratory, et al. All rights reserved.
+Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license information.
+-->
 
 # PrOMMiS Help With Imports
 
