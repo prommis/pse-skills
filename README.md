@@ -33,8 +33,6 @@ npm --version
 npx --version
 ```
 
-Because this repository is currently private, users must also have access to the repository and be authenticated with GitHub.
-
 ### Installation
 
 #### Install all skills globally for every supported agent
