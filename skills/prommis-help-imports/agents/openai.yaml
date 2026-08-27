@@ -6,6 +6,6 @@
 #####################################################################################################
 
 interface:
-  display_name: "PrOMMiS Explain Diagnostics"
-  short_description: "Run flowsheets and explain solver diagnostics"
-  default_prompt: "Use $prommis-explain-diagnostics to run the selected flowsheet, explain the important IPOPT and DiagnosticsToolbox results, and present the next diagnostic step."
+  display_name: "PrOMMiS Help Imports"
+  short_description: "Find exact PSE model import statements"
+  default_prompt: "Use $prommis-help-imports to find the exact import statement for the specified PrOMMiS, IDAES, WaterTAP, Pyomo, or Flowsheet Inspector symbol."
