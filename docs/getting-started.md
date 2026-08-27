@@ -34,16 +34,16 @@ Because the PSE Skills repository is currently private, users must also have acc
 
 ### Install all skills
 
-Install all skills globally and select the target agents interactively:
-
-```shell
-npx skills add prommis/pse-skills --skill '*' -g
-```
-
 Install all skills globally for every supported agent:
 
 ```shell
 npx skills add prommis/pse-skills --skill '*' --agent '*' -g
+```
+
+Install all skills globally and select the target agents interactively:
+
+```shell
+npx skills add prommis/pse-skills --skill '*' -g
 ```
 
 Install all skills globally for a specific agent:
@@ -60,16 +60,16 @@ npx skills add prommis/pse-skills --skill '*' -g -a codex
 
 ### Install one skill
 
-Install one skill and select the target agents interactively:
-
-```shell
-npx skills add prommis/pse-skills --skill <skill-name> -g
-```
-
 Install one skill globally for a specific agent:
 
 ```shell
 npx skills add prommis/pse-skills --skill <skill-name> -g -a <agent-name>
+```
+
+Install one skill and select the target agents interactively:
+
+```shell
+npx skills add prommis/pse-skills --skill <skill-name> -g
 ```
 
 For example:
