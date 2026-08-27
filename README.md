@@ -7,116 +7,59 @@ Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license 
 
 # PSE Skills
 
-This repository contains portable Agent Skills for Process Systems
-Engineering workflows, including PrOMMiS, IDAES, and Flowsheet Inspector.
+Portable Agent Skills for process systems engineering workflows built with
+[PrOMMiS](https://prommis.readthedocs.io/en/stable/),
+[IDAES](https://idaes-pse.readthedocs.io/en/stable/),
+[WaterTAP](https://watertap.readthedocs.io/en/stable/), and
+[Flowsheet Inspector](https://github.com/prommis/flowsheet-inspector-lib).
 
-## Skills
+## Available skills
 
-- `prommis-wrap` — Wrap flowsheets for Flowsheet Inspector.
-- `prommis-change-value` — Change flowsheet parameter values.
-- `prommis-help-imports` — Find Python import paths.
-- `prommis-explain-diagnostics` — Run and explain flowsheet diagnostics.
+- [`prommis-build-flowsheet`](skills/prommis-build-flowsheet/) — Build or incrementally extend wrapped PrOMMiS, IDAES, and WaterTAP flowsheets from plain-English process descriptions.
+- [`prommis-wrap`](skills/prommis-wrap/) — Prepare an existing flowsheet for Flowsheet Inspector.
+- [`prommis-change-value`](skills/prommis-change-value/) — Change an operating-condition or parameter value in a flowsheet.
+- [`prommis-help-imports`](skills/prommis-help-imports/) — Resolve imports from installed PrOMMiS, IDAES, WaterTAP, Pyomo, and Flowsheet Inspector packages.
+- [`prommis-explain-diagnostics`](skills/prommis-explain-diagnostics/) — Run and explain IDAES, IPOPT, and flowsheet diagnostics.
 
 ## Getting started
 
-### Requirements
+Install a current [Node.js LTS release](https://nodejs.org/), which includes `npm` and `npx`.
 
-Installation uses the [skills CLI](https://github.com/vercel-labs/skills), which places Agent Skills in the correct locations for Codex, Claude Code, Cursor, Gemini CLI, and other supported agents.
-
-Install a current [Node.js LTS release](https://nodejs.org/), which includes `npm` and `npx`. A separate installation of the skills CLI is not required. The first time `npx skills` is run, `npx` retrieves the CLI package and may display a confirmation prompt before executing the requested command.
-
-Confirm that the required commands are available:
-
-```shell
-node --version
-npm --version
-npx --version
-```
-
-Because this repository is currently private, users must also have access to the repository and be authenticated with GitHub.
-
-### Installation
-
-#### Install all skills globally for every supported agent
-
-```shell
-npx skills add prommis/pse-skills --skill '*' --agent '*' -g
-```
-
-#### Install all skills and select the agents interactively
+Install all skills globally and select the target agents interactively:
 
 ```shell
 npx skills add prommis/pse-skills --skill '*' -g
 ```
 
-#### Install all skills globally for a specific agent
-
-```shell
-# Codex
-npx skills add prommis/pse-skills --skill '*' -g -a codex
-
-# Claude Code
-npx skills add prommis/pse-skills --skill '*' -g -a claude-code
-
-# Cursor
-npx skills add prommis/pse-skills --skill '*' -g -a cursor
-
-# Gemini CLI
-npx skills add prommis/pse-skills --skill '*' -g -a gemini-cli
-
-# GitHub Copilot
-npx skills add prommis/pse-skills --skill '*' -g -a github-copilot
-```
-
-#### Install a specific skill
-
-Replace `<skill-name>` and `<agent-name>` with the required skill and agent names.
-
-Install one skill globally for every supported agent:
-
-```shell
-npx skills add prommis/pse-skills --skill <skill-name> --agent '*' -g
-```
-
-Select the target agents interactively:
-
-```shell
-npx skills add prommis/pse-skills --skill <skill-name> -g
-```
-
-Install one skill globally for a specific agent:
-
-```shell
-npx skills add prommis/pse-skills --skill <skill-name> -g -a <agent-name>
-```
-
-#### Verify the installation
+Verify the installation:
 
 ```shell
 npx skills list -g
 ```
 
-On Windows PowerShell, use `npx.cmd` instead of `npx` if required by the local script execution policy.
+Agent Skills and scientific modeling software are installed separately. See the
+[complete setup guide](docs/getting-started.md) for installation options, Python
+environment requirements, solver setup, and verification commands.
 
-### Updating
+Because this repository is currently private, users must have access to the repository and be authenticated with GitHub.
 
-Update all currently installed global skills without listing them individually:
+## Updating
+
+Update the installed global skills:
 
 ```shell
 npx skills update -g
 ```
 
-When new skills are added to this repository, rerun the installation command
-with `--skill '*'` to install them as well.
+Rerun the installation command with `--skill '*'` when new skills have been added to the repository.
 
 ## Repository structure
 
-Each directory under `skills/` is an independently installable Agent Skill and
-is the canonical source for that skill. Supporting workflow material belongs in
-that skill's `references/`, `scripts/`, or `assets/` directory as needed.
+Each directory under `skills/` is an independently installable Agent Skill and is the canonical source for that skill. Supporting agent resources are stored inside the relevant skill’s `references/`, `scripts/`, and `assets/` directories.
 
-See the [skills CLI documentation](https://github.com/vercel-labs/skills) for
-additional installation options and supported agents.
+Human-facing installation and setup documentation is stored in [`docs/`](docs/).
+
+See the [skills CLI documentation](https://github.com/vercel-labs/skills) for additional installation options and supported agents.
 
 ## Author
 
