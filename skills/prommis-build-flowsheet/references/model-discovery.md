@@ -6,23 +6,23 @@ Generate process-specific code from the user’s requested topology. Do not use 
 
 ## Discovery Decision Tree
 
-Use this decision tree before adding models or model-specific code. Discovery is preparation within the current increment or stage, not a separate interaction checkpoint.
+Use this decision tree before adding models or model-specific code. Discovery occurs only within the scope of the current increment or stage. Do not discover models, imports, or configurations for a future increment the user has not yet requested. Apply the Official Example Approval Checkpoint in `SKILL.md` only when its example-discovery conditions are met. Example discovery is optional and must not block ordinary model discovery.
 
 ### 1. Select the Python Environment
 
-Reuse an environment already confirmed during this build.
+Reuse an interpreter already confirmed for the current flowsheet and required module set.
 
-If no environment has been confirmed, run the following detector before selecting models or writing model-specific code. Do not continue until its result has been interpreted:
+If none has been confirmed, run the environment detector once with the complete currently known top-level module list:
 
     <current-python> <skill-directory>/scripts/detect_flowsheet_environment.py <required-module> [<required-module> ...]
 
-Pass only the top-level modules required by the canonical wrapper and requested model family. If the project already identifies a Python interpreter, include it with `--candidate`; obtain that path from project configuration, not from the user.
+If project configuration identifies another interpreter, include it with `--candidate`. The detector checks the current and project interpreters first and queries Conda only when neither is compatible.
 
-Use a compatible project or current interpreter when available. If exactly one other compatible environment is found, use it. If several remain, present their labels as a short choice. If none are compatible, explain the missing package family, link to the [PSE Skills setup guide](https://github.com/prommis/pse-skills/blob/main/docs/getting-started.md), and offer installation help or a clearly marked source-only draft.
+Select a compatible interpreter and reuse its exact executable path for all discovery, file generation, validation, initialization, and solving during the current flowsheet build. Do not perform separate environment searches or repeat detection for an unchanged module list.
 
-Package availability does not prove that model APIs or solvers work; validate those separately. Do not guess environment names, search the filesystem manually, or install dependencies without permission.
+If later model discovery introduces another required top-level module, rerun the detector once with the complete expanded module list. If multiple compatible environments are returned and available evidence does not distinguish them, ask the user to choose. If none are compatible, explain the missing package family, link to the [PSE Skills setup guide](https://github.com/prommis/pse-skills/blob/main/docs/getting-started.md), and offer installation help or a clearly marked source-only draft.
 
-Do not repeat environment discovery for an unchanged module list. If model discovery identifies another required top-level dependency, rerun the detector once with the complete expanded module list. Select an environment that satisfies the complete dependency set; do not substitute a different scientific model merely because the currently selected environment contains only part of that set.
+Package availability does not prove that model APIs or solvers work; validate those separately. Do not guess environment names, manually search the filesystem for environments, or install dependencies without permission.
 
 ### 2. Determine the Required Evidence
 
@@ -31,25 +31,37 @@ For each model required by the current increment:
 1. Translate the requested physical operation into the model behavior required.
 2. Reuse the Python environment, imports, property packages, APIs, and ports already verified for the current generated file.
 3. Discover only models or symbols introduced by the current increment.
-4. When an import path is unknown, run the import-discovery script once and restrict it to the relevant installed package family when known.
-5. Group related import, constructor, configuration, variable, and port checks into one Python process when practical.
-6. When the request names or clearly matches a documented process, first search for a maintained process-specific configuration or implementation for that process.
+4. When one or more import paths are unknown for the current increment, run the import-discovery script exactly once, passing every unresolved symbol name for that increment as separate positional arguments in that single call, for example:
 
-7. If a maintained process-specific configuration exists and matches the requested physical assumptions, use it unchanged. Do not reconstruct it from lower-level property, component, reaction, costing, or initialization examples.
+```text
+   <selected-python> <skill-directory>/scripts/get_imports.py NaClParameterBlock Feed --package watertap
+```
+    Do not run this script when every import path for the current increment is already known.
+5. Use exactly one Python process for all import, constructor, configuration, variable, and port checks required by the current increment, unless a check depends on the result of an earlier one in the same increment.
+6. Determine model selections and implementation details from the user’s requirements, installed public APIs and source, and official package documentation.
+7. Prefer a maintained public process-specific property, reaction, or costing configuration when it matches the requested physical assumptions. Do not reconstruct that configuration from unrelated lower-level pieces.
+8. Apply the Official Example Approval Checkpoint only when the eligibility conditions defined in `SKILL.md` are met. In Progressive Build, do not search until both eligibility conditions defined in SKILL.md's Official Example Approval Checkpoint are met. A feed-only, property-package-only, or other preparatory increment does not qualify, even if a later increment's process is easy to anticipate. Once eligible, use one bounded installed-example search pass and stop when one relevant candidate is found or the pass produces no relevant candidate.
+9. When example use is approved, inspect only the relevant portions and first confirm compatibility with the currently known model family, topology, configurations, and installed APIs. Use the example only for the technical evidence permitted by `SKILL.md`. If it is incompatible, continue without it.
 
-8. Compose a custom configuration only when no suitable maintained process-specific configuration exists or the user explicitly requests a custom model. Every custom element must be supported by authoritative documentation or an explicit user specification; otherwise stop and explain what information is missing.
+Do not compare multiple weak example candidates, repeatedly broaden the search, or treat absence of an example as missing scientific evidence. Continue with installed public APIs, official documentation, and the user's requirements.
 
-9. Before writing model-specific code, identify the selected configuration’s import path and the evidence that it matches the requested process. Importability alone does not establish scientific suitability.
+When a selected property package or unit model provides a supported public method for calculating a state or physical quantity, use that method. Do not manually reconstruct thermodynamic, transport, reaction, or costing equations from internal parameters unless the user explicitly requests a custom formulation or no supported public operation exists.
+
+Treat results from temporary discovery probes as verification evidence, not as model inputs. Trace each important numerical value to a user-specified input, documented model constant or default, or visible calculation from named inputs.
+
+When a value is derived from other inputs, calculate it in the generated flowsheet using a supported public package or unit-model operation. For simple algebra explicitly required by the user or authoritative documentation, use a Pyomo `Expression` or `Constraint`, or calculate it during the appropriate runtime step. Do not use this fallback to recreate scientific equations already provided by the selected package.
+
+Do not paste a probe's numerical result into a `Param`, `.fix()`, or initialization value unless that value is explicitly requested by the user or documented as a fixed constant or initialization value. A user-requested fixed snapshot remains allowed.
 
 Do not repeat successful discovery unless the generated file, selected environment, package family, or required model behavior has changed. 
 
 ### 3. Execute Efficiently
 
-Group related import and API checks into one Python process when practical. Stop discovery as soon as the required imports and interfaces are verified.
+Use exactly one Python process for all import and API checks required by the current increment, unless a check depends on the result of an earlier one in the same increment. Do not open or read the same file more than once for a single increment's discovery. Stop discovery as soon as the required imports and interfaces are verified.
 
 ### 4. Complete the Build Stage
 
-Insert the verified code, run the applicable validation, and then follow the reporting behavior of the selected interaction mode. Do not pause after discovery alone unless the build is blocked.
+After any required Official Example Approval Checkpoint is resolved, insert the verified code, run the applicable validation, and follow the reporting behavior of the selected interaction mode. Do not otherwise pause after discovery unless the build is blocked.
 
 ## Describe the Requested Process
 
@@ -88,13 +100,17 @@ Use implementation evidence in this order:
 
 1. Installed public model APIs and source.
 2. Current official package documentation.
-3. Maintained official examples from the package provider.
-4. Package tests as supporting implementation evidence.
-5. Existing compatible local flowsheets.
+3. User-approved maintained official examples.
+4. Package tests as supporting API evidence.
+5. User-approved existing compatible local flowsheets.
 
-Tests may be inspected as supporting evidence, but generated flowsheets must not import models, property packages, configurations, or utilities from test-only modules or fixture namespaces.
+Package tests may be inspected when the earlier evidence does not establish a required interface. Generated flowsheets must not import models, property packages, configurations, or utilities from test-only modules or fixture namespaces.
 
-When a maintained official example represents the same named process, chemistry, or equipment arrangement, use it to identify supported property packages, reaction configurations, unit settings, and initialization patterns. Still generate only the topology and scope requested by the user; do not copy the complete example flowsheet.
+An importable public property, reaction, or costing configuration may be reused when it matches the requested physical assumptions. Do not treat a complete flowsheet or its build helpers as a reusable configuration.
+
+When approved, an official example may confirm property-package selection, unit configuration, scaling targets, initialization methods, costing interfaces, solver behavior, and execution order. It does not determine the process design and must not be copied wholesale.
+
+If neither public documentation nor an approved maintained example establishes a required scaling method, initialization strategy, or execution dependency, use a supported documented default when available. Otherwise, report the unresolved choice instead of inventing numerical guesses, solver settings, or staged initialization procedures.
 
 A successful import is not sufficient evidence that a model is scientifically appropriate. Confirm the model’s components, phases, state basis, physical assumptions, and compatibility with the requested units.
 
@@ -107,33 +123,26 @@ For each requested process function:
 1. Search the available packages using terms derived from the requested physical operation.
 2. Identify candidate unit models and property packages.
 3. Locate their public import paths.
-4. Inspect their configuration declarations, ports, state blocks, public methods, and tests.
+4. Inspect only the constructor options, ports, state basis, and public methods required by the requested flowsheet. Consult package tests only when public source and documentation do not establish a required interface.
 5. Reject candidates that are unavailable, incompatible, or do not represent the requested behavior.
 
 Do not assume a class name, module path, port name, configuration option, or method from memory.
 
 Do not create a permanent model catalog in this skill. Repeat discovery against the installed environment so package updates can be handled without rewriting the skill.
 
-## Verify Each Selected Model
+## Verify New or Uncertain Model Details
 
-Before inserting a model, verify:
+Before inserting a new or changed model, verify only the details required by the current flowsheet:
 
-- exact import path;
-- class or factory name;
-- required constructor configuration;
-- supported property packages;
-- inlet and outlet structure;
-- state-variable and component basis;
-- required operating specifications;
-- degrees-of-freedom expectations;
-- scaling requirements;
-- initialization interface;
-- solver requirements;
-- any required transformations or supporting blocks.
+- its supported public import path;
+- the constructor options actually being used;
+- the inlet and outlet ports actually being connected;
+- its compatibility with the selected property package; and
+- the specifications required by the requested operation.
 
-Distinguish required configuration from optional example-specific choices.
+Verify scaling, initialization, solver, costing, or optimization interfaces only when the current request includes those operations or the selected model requires them to function.
 
-Use documented public APIs where available. Treat private implementation details as a last resort and report when they are unavoidable.
+Reuse details already verified for the current generated file. Group related checks into one Python process and stop when the required interfaces are confirmed. Do not enumerate every configuration option, variable, method, or solver feature exposed by the model.
 
 ## Verify Property Compatibility
 

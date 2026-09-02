@@ -21,20 +21,10 @@ from idaes.core import FlowsheetBlock
 from idaes.core.util.model_statistics import degrees_of_freedom
 from idaes_fi.structfs.fsrunner import FlowsheetRunner, Context
 
-FS = FlowsheetRunner(
-    steps=(
-        "build",
-        "set_solver",
-        "set_operating_conditions",
-        "set_scaling",
-        "solve_initial",
-        "set_autoscaling",
-        "add_costing",
-        "initialize_costing",
-        "setup_optimization",
-        "solve_optimization",
-    )
-)
+# Optional phase functions below are reusable placeholders. The build skill
+# decorates only the phases required by the requested flowsheet and derives
+# their runner order from the selected models' verified dependencies.
+FS = FlowsheetRunner(steps=("build",))
 
 
 @FS.step("build")
@@ -74,56 +64,55 @@ def connect_units(m):
     TransformationFactory("network.expand_arcs").apply_to(m)
 
 
-@FS.step("set_solver")
+
 def set_solver(context):
     """Set the optimization solver."""
     context.solver = SolverFactory("ipopt")
 
 
-@FS.step("set_operating_conditions")
+
 def set_operating_conditions(context):
     """Set variables corresponding to operating conditions."""
     m = context.model
 
 
-@FS.step("set_scaling")
 def set_scaling(context):
     """Set manual scaling factors."""
     m = context.model
 
 
-@FS.step("solve_initial")
+
 def solve_initial(context):
     """Perform the initial solve of the square model."""
     m = context.model
     results = context.solver.solve(m, tee=context["tee"])
 
 
-@FS.step("set_autoscaling")
+
 def set_autoscaling(context):
     """Set automatic scaling factors."""
     m = context.model
 
 
-@FS.step("add_costing")
+
 def add_costing(context):
     """Add costing variables, if present."""
     m = context.model
 
 
-@FS.step("initialize_costing")
+
 def initialize_costing(context):
     """Initialize costing."""
     m = context.model
 
 
-@FS.step("setup_optimization")
+
 def setup_optimization(context):
     """Increase degrees of freedom and set the optimization objective."""
     m = context.model
 
 
-@FS.step("solve_optimization")
+
 def solve_optimization(context):
     """Solve the optimization problem."""
     m = context.model

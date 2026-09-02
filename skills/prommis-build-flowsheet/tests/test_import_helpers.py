@@ -61,6 +61,75 @@ def test_discovers_public_configuration_object(tmp_path, monkeypatch):
         f"from {module_name} import thermo_config"
     )
 
+def test_get_imports_accepts_multiple_symbols(tmp_path, monkeypatch):
+    """Multiple symbols are resolved from a single package walk."""
+    module_name = "pse_skill_multi_symbol_module"
+    package_path = tmp_path / module_name
+    package_path.mkdir()
+    module_path = package_path / "__init__.py"
+    module_path.write_text(
+        "class FirstModel:\n"
+        "    pass\n\n"
+        "class SecondModel:\n"
+        "    pass\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.syspath_prepend(str(tmp_path))
+    importlib.invalidate_caches()
+    GET_IMPORTS.import_quietly.cache_clear()
+
+    try:
+        results = GET_IMPORTS.search_package(
+            module_name,
+            ["FirstModel", "SecondModel", "MissingModel"],
+        )
+    finally:
+        sys.modules.pop(module_name, None)
+        GET_IMPORTS.import_quietly.cache_clear()
+
+    assert results["FirstModel"] == [f"from {module_name} import FirstModel"]
+    assert results["SecondModel"] == [f"from {module_name} import SecondModel"]
+    assert results["MissingModel"] == []
+
+
+def test_get_imports_cli_reports_each_symbol(tmp_path, monkeypatch, capsys):
+    """main() prints a per-symbol section and fails only when any symbol is missing."""
+    module_name = "pse_skill_cli_multi_symbol_module"
+    package_path = tmp_path / module_name
+    package_path.mkdir()
+    module_path = package_path / "__init__.py"
+    module_path.write_text(
+        "class KnownModel:\n"
+        "    pass\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.syspath_prepend(str(tmp_path))
+    importlib.invalidate_caches()
+    GET_IMPORTS.import_quietly.cache_clear()
+
+    try:
+        exit_code = GET_IMPORTS.main(
+            [
+                "KnownModel",
+                "MissingModel",
+                "--package",
+                module_name,
+            ]
+        )
+    finally:
+        sys.modules.pop(module_name, None)
+        GET_IMPORTS.import_quietly.cache_clear()
+
+    output = capsys.readouterr().out
+
+    assert exit_code == 1
+    assert "## KnownModel" in output
+    assert f"from {module_name} import KnownModel" in output
+    assert "## MissingModel" in output
+    assert "No match found for 'MissingModel'" in output
+
 
 def test_import_discovery_identifies_test_namespaces():
     """Test and fixture namespaces are classified as unsupported."""

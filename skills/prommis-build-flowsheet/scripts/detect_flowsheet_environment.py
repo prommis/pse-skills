@@ -274,7 +274,14 @@ def build_parser():
         type=float,
         default=5.0,
         metavar="SECONDS",
-        help="Timeout for each environment check. Default: 5 seconds.",
+        help="Timeout for each individual Python environment check. Default: 5 seconds.",
+    )
+    parser.add_argument(
+        "--conda-timeout",
+        type=float,
+        default=20.0,
+        metavar="SECONDS",
+        help="Timeout for listing Conda environments. Default: 20 seconds.",
     )
     return parser
 
@@ -325,7 +332,7 @@ def main(argv=None):
 
     if not results["compatible"]:
         results["searched_conda"] = True
-        discovered = conda_candidates(arguments.timeout, results)
+        discovered = conda_candidates(arguments.conda_timeout, results)
 
         primary_paths = {
             os.path.normcase(os.path.abspath(str(candidate[2])))

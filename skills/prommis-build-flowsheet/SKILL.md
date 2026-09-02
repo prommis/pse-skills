@@ -35,7 +35,7 @@ Use Progressive Build when the user wants to construct the process through multi
 
 Each prompt defines only the current increment. Implement and validate that increment, report what changed, and wait for the next process description.
 
-Do not infer unrequested downstream units, operating conditions, initialization, solving, costing, optimization, or reporting. Do not treat the current increment as the completed flowsheet unless the user says it is complete.
+Do not infer unrequested downstream units, operating conditions, initialization, solving, costing, optimization, or reporting. Do not treat the current increment as the completed flowsheet unless the user says it is complete. Treat only what the current prompt explicitly states as the increment. Do not expand it to include a step that would logically follow, even if it seems like the obvious next action.
 
 ### Guided Build
 
@@ -54,9 +54,15 @@ Use End-to-End Build when the user provides the complete requested process and w
 
 Build and validate all requested stages, provide concise progress updates, and pause only when missing information prevents a valid modeling decision or requires user authorization.
 
-The interaction mode controls how the requested scope is delivered; it does not expand that scope. Add operating conditions, scaling, initialization, solving, costing, optimization, or result reporting only when requested or required to perform another explicitly requested operation.
+The interaction mode controls how the requested scope is delivered; it does not expand that scope. Add operating conditions, scaling, initialization, solving, costing, optimization, or result reporting only when the user explicitly requested it, or when it is a hard technical prerequisite for an explicitly requested operation. When adding something under the second condition, state in the response exactly which requested operation it was required for. If that dependency is not certain, ask instead of adding it.
 
 A request to build, create, or add process equipment does not by itself request initialization or solving.
+
+## Scope Discipline
+
+A filename, destination path, or broad process label is not a requirement. Do not use it to infer, plan, search for, mention, or justify adding topology, models, operations, initialization, solving, costing, optimization, or reporting that the user has not explicitly requested in a prompt.
+
+This rule applies to every stage of the workflow, including code generation, example search, and completion reporting.
 
 ## Initial Response
 
@@ -87,9 +93,11 @@ After the mode is established, state it before building:
 
 A request to initialize, solve, cost, optimize, validate, or report results defines technical scope independently of the selected interaction mode.
 
-Combine all missing mode, filename, and destination questions into the same response when practical.
+Combine all missing mode, filename, and destination questions into a single response. Ask them together in one message; do not spread them across multiple turns.
 
 If the user already supplied a build mode, filename, or complete output path, do not ask for that information again.
+
+In Progressive Build, a prompt that only selects the mode, filename, or destination does not define a build increment. Record those choices and wait for the first process-model request. Do not detect the modeling environment, create the canonical file, or run validation until the user supplies the first property package, process unit, connection, or other model content.
 
 ## Select the Output File
 
@@ -105,7 +113,7 @@ For a new flowsheet:
 4. If it exists, ask whether the user wants to extend that file or choose another filename.
 5. Do not overwrite an existing file.
 
-After the path is confirmed, run:
+After the path is confirmed and the first process-model increment has been supplied, run:
 
 ```text
 <selected-python> <skill-directory>/scripts/create_flowsheet.py <target.py>
@@ -120,19 +128,102 @@ After the mode and target file are established:
 1. Read and follow `references/model-discovery.md`, including running its environment detector when no environment has been confirmed, before selecting or adding model-specific code.
 2. Create the canonical wrapped file when starting a new flowsheet.
 3. Tailor the canonical execution phases to the requested flowsheet. Remove unused decorated placeholder functions and their runner entries, add any required phases, and keep `FlowsheetRunner(steps=(...))` synchronized with the resulting decorated steps in dependency order.
-4. Implement one coherent flowsheet stage.
+
+Treat the canonical template’s optional functions as reusable placeholders, not as a prescribed workflow. Before model-specific validation, decorate only the runtime phases required by the requested flowsheet and derive their runner order from the user’s requirements and the selected models’ verified dependencies. Do not retain a placeholder phase selection or order without verification.
+
+4. In Progressive Build and Guided Build, implement one coherent stage at a time. In End-to-End Build, implement the complete requested scope in dependency order before consolidated validation, unless an intermediate check is needed to verify an uncertain API before dependent code is written.
 5. Read `references/recycle-building.md` if the requested topology contains or changes a recycle, return, feedback, bypass, purge, or other directed cycle.
-6. Read `references/wrapper-integrity.md` if the stage changes functions, execution phases, solver sequencing, context usage, or the runner step sequence.
-7. Read and follow `references/validation.md`, executing every check applicable to the completed stage.
+6. Read `references/wrapper-integrity.md` if the stage changes functions, execution phases, solver sequencing, context usage, or the runner step sequence. If the current increment adds no new decorated runtime phase and changes no execution order, do not read this reference and do not run its step-name validation command.
+7. Read and follow `references/validation.md`. Validate each completed checkpoint in Progressive Build and Guided Build. In End-to-End Build, consolidate validation and avoid separately executing every intermediate runtime phase when a later run already includes those phases.
 8. In Progressive Build mode, report only the completed increment and wait for the user’s next process description. Do not propose or implement an unrequested downstream unit.
 9. In Guided Build mode, report the completed stage, describe the next stage derived from the requested complete topology, and wait for approval.
 10. In End-to-End Build mode, continue through the remaining requested stages unless user input is required.
 
-Keep each build stage efficient. Reuse evidence already verified for the current generated file, group related read-only checks into as few processes as practical, and do not repeat successful environment discovery.
+Keep user-facing progress updates brief and focused on the process model, completed work, and decisions requiring user input. Do not narrate internal reasoning, command construction, tool selection, patch mechanisms, routine API probes, environment searches, or retry attempts. Mention an execution or environment problem only when it blocks progress or materially affects the requested result; state the problem and required next action concisely.
 
-If a command fails before executing because of a tool-launch or execution-boundary error, retry it once using the simplest supported method. Do not retry equivalent patch commands repeatedly.
+Keep each build stage efficient. Select the Python environment once. Use exactly one Python process for all import, constructor, configuration, variable, and port checks required by a single increment, unless a check depends on a result from an earlier check in the same increment. Do not open or read the same file more than once per increment. Reuse every successful result whose source has not changed. In End-to-End Build, perform one consolidated final runtime validation. Do not repeat successful environment discovery, unchanged execution prefixes, successful solver runs, or reporting runs.
+
+Do not create API probes, patch helpers, scratch scripts, logs, or other temporary artifacts inside the target repository, output directory, or user workspace. Run checks in memory whenever the check does not require writing to disk, such as import checks, API existence checks, and configuration inspection. Only create a temporary file when the check itself requires file I/O. If a temporary file is required, create it in the operating system’s temporary directory and remove it immediately after use, including after a failed check. At completion, leave only the files requested by the user or permanent project files explicitly required by the requested implementation.
+
+If a required command or file edit fails before execution because of a sandbox or process-launch error, retry it once using the simplest native mechanism. If the retry fails for the same platform reason, use the supported approval or elevated-execution mechanism once and continue from the same stage. Do not restart completed discovery, search for patch wrappers, or attempt encoded or shell-based file-writing workarounds. Stop only if no supported execution path remains or the approved attempt also fails.
 
 Use installed public APIs and authoritative documentation to verify model-specific behavior.
+
+Build primarily from the user’s requirements, installed public APIs and source, and official model documentation.
+
+### Official Example Approval Checkpoint
+
+This checkpoint applies in Progressive Build, Guided Build, and End-to-End Build, but example discovery is optional and must not delay ordinary model discovery.
+
+In Guided Build and End-to-End Build, perform the example check only after the supplied process requirements are understood.
+
+In Progressive Build, perform an example check only after both of these conditions are met:
+
+1. The principal process operation and its package or model family are known. The principal operation is the model that performs the main physical or chemical transformation, such as separation, reaction, heat transfer, membrane treatment, or extraction.
+2. At least one identifying technical detail is known: the property or reaction basis, a specialized model configuration, a defining process connection, a costing method, or a simulation or optimization objective.
+
+A feed, product, ordinary connection, property package by itself, or other generic support model does not satisfy these conditions unless it is explicitly the main requested process. If these conditions are never met, continue without an example. Do not infer future topology, costing, optimization, or reporting requirements from an example.
+
+In Progressive Build, the principal process operation must be explicitly requested for implementation in the current increment before an example search is allowed. Do not satisfy this condition using a filename, destination path, broad process label, anticipated future topology, or equipment mentioned only as a later plan. A feed-only, property-package-only, or other preparatory increment remains ineligible even when the likely future process can be inferred.
+
+Once these example-check conditions are met, perform at most one bounded search pass over maintained official examples installed with the selected package. Stop after finding one relevant candidate or completing that pass.
+
+Do not search again unless a later increment:
+
+- adds, removes, or replaces a principal process unit;
+- changes the property or reaction model family;
+- introduces a defining connection such as a recycle or energy-recovery path; or
+- adds or changes the costing, simulation, or optimization purpose;
+
+and the currently approved example no longer supports that changed scope.
+
+Each permitted search is limited to one pass. Do not search the web, unrelated repositories, hidden solution files, or repeatedly broaden the search. If the user explicitly names or provides an official tutorial or example, use that source instead of performing another search.
+
+A candidate is relevant only when the available official description indicates that it:
+
+- uses the same principal model family;
+- supports the currently known process topology and configurations; and
+- contains no material conflict with the user's supplied requirements.
+
+Differences in numerical values, reporting, wrapper organization, or stages not yet requested do not establish a conflict because those details remain controlled by the user. If multiple candidates remain equally plausible, do not select one; wait for more requirements or continue without an example.
+
+Before approval, use only official example names, paths, package metadata, and descriptive documentation or module-level descriptions to identify a candidate. Do not read executable function bodies or extract code during the candidate search.
+
+Do not inspect a candidate's implementation before receiving approval. If one relevant candidate is found, respond in two or three sentences that:
+
+- identifies the example and its official provider;
+- explains which currently requested models, topology, or operations appear similar; and
+- explains which technical details it could help verify.
+
+Then ask:
+
+"May I inspect this example and use it only as supporting technical evidence?"
+
+End the current turn and wait for the user's answer. End-to-End Build does not override this authorization checkpoint.
+
+If the user explicitly requests reproduction or use of a named official tutorial or example, that counts as approval. Briefly identify its relevance and continue without asking again.
+
+After approval, inspect only the portions needed for the current flowsheet. Confirm that the example actually uses compatible model families, topology, configurations, and installed-version APIs. If that inspection reveals a material conflict, do not use the example and continue from public APIs and official documentation.
+
+An approved example may confirm:
+
+- supported public import paths and APIs;
+- property, reaction, and costing configurations;
+- unit-model configuration options;
+- model-specific scaling targets;
+- initialization methods;
+- solver behavior; and
+- execution dependencies.
+
+Do not copy the complete flowsheet, import its build helpers, reproduce its function structure, or inherit its numerical assumptions, topology, specifications, costing design, optimization design, or reporting. The user's explicit requirements always determine the generated flowsheet.
+
+If no relevant example is found, the user declines, or the approved candidate proves incompatible, continue using the user's requirements, installed public APIs and source, and official model documentation. Absence of an example is not a blocker.
+
+In Progressive Build, reassess an approved example only when a later increment materially changes the model family, topology, costing method, or simulation or optimization purpose. If the same example remains compatible, reuse it without another search or approval request. If a different example becomes necessary, identify that example and request separate approval before inspecting it.
+
+Do not repeat environment detection, API discovery, validation runs, or solver runs solely for example selection or reassessment.
+
+Treat user-supplied model selections, public import paths, configuration options, numerical values, target objects, scaling operations, initialization methods, and execution order as requirements. Preserve both the supplied value and the exact object or operation to which it applies. Do not broaden, reinterpret, normalize, invert, replace, or silently improve a requirement. If it is unsupported by the installed API, explain the conflict before changing it.
 
 Preserve scientific-model fidelity. Do not create, combine, or substitute thermodynamic, reaction, costing, or initialization configurations unless that construction is supported by a public package API, an authoritative source, or the user’s explicit choice. If the requested behavior cannot be represented using verified public components, stop and explain the missing dependency or modeling decision instead of silently producing an approximation.
 
@@ -156,7 +247,8 @@ Report:
 - the highest validation stage completed;
 - any assumptions or checks that could not be verified.
 
-Do not report a successful solve unless it was executed and its termination condition was checked.
+
+Do not name unrequested downstream units, operations, or process stages in the completion report, even as "not yet added" or "not yet built." Report only what was implemented and validated for the current increment. If the user asks what would come next, answer that separately from the completion report, not inside it.
 
 ## Interaction Examples
 

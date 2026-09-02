@@ -5,6 +5,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license information.
 #####################################################################################################
 
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -18,6 +19,16 @@ SCRIPT = (
     / "detect_flowsheet_environment.py"
 )
 
+MODULE_SPEC = importlib.util.spec_from_file_location(
+    "prommis_build_environment_detector",
+    SCRIPT,
+)
+
+if MODULE_SPEC is None or MODULE_SPEC.loader is None:
+    raise ImportError(f"Unable to load environment detector: {SCRIPT}")
+
+DETECTOR_MODULE = importlib.util.module_from_spec(MODULE_SPEC)
+MODULE_SPEC.loader.exec_module(DETECTOR_MODULE)
 
 def run_script(*arguments, env=None):
     """Run the environment detector using the current test interpreter."""
@@ -87,3 +98,46 @@ def test_rejects_invalid_module_name():
 
     assert completed.returncode != 0
     assert "Invalid module names" in completed.stderr
+
+def test_uses_separate_conda_discovery_timeout(monkeypatch):
+    """Conda listing must not use the shorter Python-probe timeout."""
+    observed = {}
+
+    def fake_probe_candidates(candidates, modules, timeout, results):
+        if candidates:
+            results["missing"].append(
+                {
+                    "label": "current",
+                    "source": "current",
+                    "python": str(sys.executable),
+                    "missing_modules": list(modules),
+                }
+            )
+
+    def fake_conda_candidates(timeout, results):
+        observed["timeout"] = timeout
+        return []
+
+    monkeypatch.setattr(
+        DETECTOR_MODULE,
+        "probe_candidates",
+        fake_probe_candidates,
+    )
+    monkeypatch.setattr(
+        DETECTOR_MODULE,
+        "conda_candidates",
+        fake_conda_candidates,
+    )
+
+    result = DETECTOR_MODULE.main(
+        [
+            "pse_skill_missing_test_module",
+            "--timeout",
+            "5",
+            "--conda-timeout",
+            "20",
+        ]
+    )
+
+    assert result == 0
+    assert observed["timeout"] == 20

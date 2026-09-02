@@ -13,23 +13,21 @@ The generated file is already wrapped. Edit that same file directly. Do not invo
 
 Use these sources in order:
 
-1. The user-requested process topology.
-2. Installed model classes, configuration, ports, and public APIs.
-3. Package documentation and tests.
-4. Maintained example flowsheets from the package providing the models.
-5. Existing local wrapped flowsheets as additional implementation evidence.
+1. The user-requested process topology and technical requirements.
+2. Installed model classes, configurations, ports, and public APIs.
+3. Official package documentation.
+4. User-approved maintained official examples.
+5. Package tests as supporting API evidence.
 
-Generate the flowsheet from the requested topology. Do not copy an entire example merely because it looks similar.
+Generate the flowsheet from the requested topology. When example use is approved, examples may confirm model-specific configurations, scaling targets, initialization APIs, solver behavior, and execution dependencies. They do not determine the process design.
 
-Examples may confirm model-specific patterns such as configuration, specifications, scaling, initialization, and solve order. They do not determine the process design.
-
-The canonical wrapped asset is the only file copied wholesale.
+Do not copy a complete example or inherit unrelated topology, specifications, values, costing, optimization, or reporting. The canonical wrapped asset is the only file copied wholesale.
 
 Do not hardcode catalogs of unit models, property packages, ports, step names, initialization methods, solver options, or package APIs.
 
 ## Validate Step Names
 
-Run `fi-steps --format text` in the detected project environment to obtain the currently valid step names.
+When the current increment adds, removes, or renames a decorated runtime step, run `fi-steps --format text` in the detected project environment to obtain the currently valid step names. Do not run this command for an increment that adds no new or changed decorated step; reuse the step names already confirmed for this file.
 
 Use its output only as an allowed-name set. Never use its printed order to determine flowsheet execution order.
 
@@ -61,17 +59,19 @@ Use a decorated step only when the function represents a distinct runtime phase 
 - exchanges state through `Context`; or
 - should be independently runnable or visible in Flowsheet Inspector.
 
-Do not decorate every helper.
+Do not decorate every helper. If it's unclear whether a function qualifies as a distinct runtime phase, default to keeping it a plain helper rather than decorating it.
 
-Use substeps only when their Inspector visibility is useful and the installed runner supports them. Otherwise, keep the functions plain.
+Use substeps only when their Inspector visibility is useful and the installed runner supports them. If it's unclear whether substep visibility is needed, keep the functions plain and do not create substeps.
 
 ## Determine Execution Order
 
-Derive execution order from the generated model’s actual dependencies.
+Derive execution order from the generated model’s actual dependencies. Do not impose a universal order or move an operation merely to fit a preferred wrapper phase structure.
 
-Use installed model APIs, package tests, and maintained examples to confirm any required ordering. Do not copy an example’s complete execution sequence without checking that every phase applies to the generated flowsheet.
+Use the user’s explicit requirements, installed public model APIs, and official model documentation to determine what each operation requires and produces. Place scaling only after the objects and values it depends on exist, and place initialization only after all required specifications and scaling are available. If the workflow is split into decorated wrapper steps, preserve these dependencies and the model’s supported behavior.
 
-After every structural change:
+Scaling is not necessarily a single early phase. If costing, optimization, or another later phase creates variables or constraints that require documented scaling, apply that scaling after those objects are constructed and before their corresponding initialization or solve. Do not rescale unchanged parts of the model unnecessarily.
+
+After a structural change that adds, removes, or reorders a decorated runtime step:
 
 1. Identify every decorated runtime step.
 2. Determine what state each step requires and produces.
@@ -80,7 +80,7 @@ After every structural change:
 5. Place solver creation or reconfiguration before the solve that consumes it.
 6. Encode the derived sequence explicitly in `FlowsheetRunner(steps=(...))`.
 
-The canonical template begins with an explicit sequence covering all placeholder phases. Tailor it to the generated flowsheet: remove unused decorated placeholder functions and their runner entries, add required phases, and ensure the final sequence contains every remaining decorated runtime step exactly once and no helper functions.
+The canonical template activates only `build`. Its optional phase functions are plain reusable helpers. Decorate only the runtime phases required by the generated flowsheet, add every decorated step to the runner sequence exactly once, and do not place plain helpers in the runner sequence.
 
 Function-definition order and decorator order do not determine execution order.
 
@@ -99,7 +99,7 @@ Use the context variable name already established by the canonical template or g
 
 ## Preserve Solver Behavior
 
-Determine solver behavior from the selected models, installed APIs, and maintained package examples or tests.
+Determine solver behavior from the selected models, installed public APIs, official documentation, and package tests. Use a complete example as solver evidence only when the user approved its use.
 
 Preserve the required:
 
@@ -126,6 +126,8 @@ After adding or changing units, connections, operating conditions, initializatio
 6. Model, solver, results, and `tee` use `Context` consistently.
 7. The `__main__` block calls `run_steps()` on the declared runner.
 8. The complete file parses as valid Python.
+
+These eight checks are static verification of the file's current state. Running them does not require rerunning `fi-steps` unless the current increment meets the condition in "Validate Step Names" above.
 
 If a check fails, repair the same generated file and repeat the failed check. Do not send the file through the interactive `prommis-wrap` workflow.
 

@@ -7,6 +7,7 @@
 
 """Tests for the canonical flowsheet creation helper."""
 
+import ast
 import importlib.util
 from pathlib import Path
 
@@ -73,3 +74,43 @@ def test_create_flowsheet_can_replace_when_requested(tmp_path):
 
     assert created == target.resolve()
     assert target.read_bytes() == TEMPLATE_PATH.read_bytes()
+
+def test_template_activates_only_build():
+    """Optional reusable phases must not impose a default execution order."""
+    source = TEMPLATE_PATH.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    functions = set()
+    decorated_steps = []
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+
+        functions.add(node.name)
+
+        for decorator in node.decorator_list:
+            if (
+                isinstance(decorator, ast.Call)
+                and isinstance(decorator.func, ast.Attribute)
+                and decorator.func.attr == "step"
+                and decorator.args
+                and isinstance(decorator.args[0], ast.Constant)
+            ):
+                decorated_steps.append(decorator.args[0].value)
+
+    expected_helpers = {
+        "set_solver",
+        "set_operating_conditions",
+        "set_scaling",
+        "solve_initial",
+        "set_autoscaling",
+        "add_costing",
+        "initialize_costing",
+        "setup_optimization",
+        "solve_optimization",
+    }
+
+    assert 'FS = FlowsheetRunner(steps=("build",))' in source
+    assert decorated_steps == ["build"]
+    assert expected_helpers <= functions

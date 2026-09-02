@@ -6,11 +6,11 @@ Use installed package APIs and documentation matching the active environment. Do
 
 ## When to Consult Official Sources
 
-Do not open every source for every recycle. Apply the durable instructions in this file first and inspect the installed package API, source, tests, and bundled documentation.
+Apply the durable instructions in this file first. Consult the installed package API, source, tests, and bundled documentation before opening any external source.
 
-When installed evidence is insufficient and browsing is available, open and read the specific official source assigned to the unresolved question before generating the affected code. Do not rely on the link title or URL alone.
+Open an official source only when the installed package API, source, tests, and documentation cannot answer the specific unresolved question, and only the single source assigned to that question in the list below. Do not rely on the link title or URL alone; read the page.
 
-Open only the relevant source. Do not browse every link by default.
+Do not open more than one source per unresolved question. Do not open a source for a question that installed evidence has already answered.
 
 - For Pyomo graph creation, calculation order, tear selection, tear guesses, or convergence behavior, consult [Pyomo Network: Sequential Decomposition](https://pyomo.readthedocs.io/en/stable/explanation/modeling/network.html).
 
@@ -45,7 +45,8 @@ Translate the user’s request into process roles:
 - purge or bypass, if requested;
 - affected material or energy state.
 
-These roles describe the requested topology. They are not model or port names.
+
+Apply the Scope Discipline rule in SKILL.md: derive these roles only from the user's explicit request, not from a filename, destination path, or anticipated future topology.
 
 Infer a missing recycle source or destination only when the requested process and selected models make it unambiguous. Otherwise, ask one focused question before creating the loop.
 
@@ -129,7 +130,7 @@ Inspect the selected models and installed framework for a supported strategy, su
 - a documented unit-by-unit initialization sequence;
 - a maintained process-specific initialization routine.
 
-Choose the strategy best supported by the selected models and current package versions.
+Choose the strategy with the strongest evidence in this order: a model-provided initializer, a documented unit-by-unit sequence from official documentation, graph-based sequential decomposition, then a maintained process-specific routine. If two strategies have comparably strong evidence, report the choice and the alternative considered.
 
 Use `SequentialDecomposition` only when the installed Pyomo API and generated network support it. Import it only when the generated implementation uses it.
 
@@ -179,7 +180,7 @@ Do not copy numerical tear guesses from an unrelated example. Report assumptions
 After adding recycle initialization:
 
 1. Decide whether the logic is a helper inside an existing phase or a distinct runtime phase.
-2. Validate any new decorated step name against the installed `fi-steps` output.
+2. If this recycle introduces a new or renamed decorated step, validate that step name against the installed `fi-steps` output per `wrapper-integrity.md`. If no decorated step is added or renamed, skip this validation.
 3. Update the explicit `FlowsheetRunner(steps=(...))` sequence.
 4. Preserve model, solver, results, and `tee` handling through `Context`.
 5. Follow `wrapper-integrity.md`.
