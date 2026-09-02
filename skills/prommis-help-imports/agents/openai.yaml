@@ -5,14 +5,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license information.
 #####################################################################################################
 
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.coverage
-htmlcov/
-.vscode/
-.venv/
-venv/
-.env
-.DS_Store
-Thumbs.db
+interface:
+  display_name: "PrOMMiS Help Imports"
+  short_description: "Find exact PSE model import statements"
+  default_prompt: "Use $prommis-help-imports to find the exact import statement for the specified PrOMMiS, IDAES, WaterTAP, Pyomo, or Flowsheet Inspector symbol."

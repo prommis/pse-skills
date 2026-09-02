@@ -5,14 +5,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license information.
 #####################################################################################################
 
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.coverage
-htmlcov/
-.vscode/
-.venv/
-venv/
-.env
-.DS_Store
-Thumbs.db
+interface:
+  display_name: "PrOMMiS Build Flowsheet"
+  short_description: "Build wrapped flowsheets from process descriptions"
+  default_prompt: "Use $prommis-build-flowsheet to build a wrapped flowsheet from the provided process description. Use the user's explicitly selected build mode; if none was selected, ask whether the flowsheet will be supplied progressively or is already complete."
