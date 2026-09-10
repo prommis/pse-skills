@@ -5,14 +5,7 @@
 # Please see the files COPYRIGHT.md and LICENSE.md for full copyright and license information.
 #####################################################################################################
 
-__pycache__/
-*.py[cod]
-.pytest_cache/
-.coverage
-htmlcov/
-.vscode/
-.venv/
-venv/
-.env
-.DS_Store
-Thumbs.db
+interface:
+  display_name: "PrOMMiS Change Value"
+  short_description: "Change flowsheet operating-condition values"
+  default_prompt: "Use $prommis-change-value to change the requested operating-condition or parameter value in the selected flowsheet."

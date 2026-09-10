@@ -1,6 +1,6 @@
 ---
 name: prommis-help-imports
-description: "Returns the exact import statement for any PrOMMiS, IDAES, Pyomo, or Flowsheet Inspector module. TRIGGER when: user gets ImportError or ModuleNotFoundError, doesn't know import path, asks how to import LeachingTrain, FlowsheetRunner, DiagnosticsToolbox, Flash, Mixer, or any unit model or property package, asks where a class lives. DO NOT TRIGGER when: user wants to wrap a flowsheet, change a value, or debug a solver error."
+description: "Finds and verifies exact import statements for PrOMMiS, IDAES, WaterTAP, Pyomo, and Flowsheet Inspector classes or functions. TRIGGER when: the user has an ImportError or ModuleNotFoundError, asks where a model or utility lives, or needs an exact import path. DO NOT TRIGGER when: the user wants to wrap, solve, or diagnose a flowsheet."
 metadata:
   author: Tanushree Subramanian
 license: LICENSE.md
@@ -45,20 +45,37 @@ e.g. `prommis.leaching.leach_train` tells Python to look in the
 modules. When this happens the skill gathers context from the user
 to determine which one is correct.
 
-## Note on Import Paths
+## Import Discovery
 
-Import paths are not hardcoded in this skill — they are found by
-running `scripts/get_imports.py` directly against the locally
-installed packages. This means the results always reflect the
-user's actual installed version.
+Run `scripts/get_imports.py` against the locally installed packages so results
+reflect the selected Python environment.
 
-Resolve `scripts/get_imports.py` relative to the directory that
-contains this `SKILL.md`. From the repository root, that path is
-`skills/prommis-help-imports/scripts/get_imports.py`.
+With no package arguments, the script searches:
 
-Resolve scripts/verify_file_imports.py the same way. Use it after
-editing a named file to verify syntax and confirm each inserted import
-occurs exactly once without executing the flowsheet.
+- `prommis`
+- `idaes`
+- `watertap`
+- `pyomo`
+- `idaes_fi`
+
+When the relevant package family is known, pass one or more `--package`
+arguments to limit the search:
+
+```text
+<selected-python> <skill-directory>/scripts/get_imports.py <symbol-name>
+```
+
+```text
+<selected-python> <skill-directory>/scripts/get_imports.py <symbol-name> --package <package-root>
+```
+
+Repeat `--package` to search multiple package roots.
+
+Resolve the script relative to the directory containing this `SKILL.md`.
+
+After editing a named file, run `scripts/verify_file_imports.py` from the same
+skill directory to verify syntax and confirm that each inserted import occurs
+exactly once without executing the flowsheet.
 
 ## Stage 1 — Gather Context
 
@@ -96,14 +113,14 @@ Run the script with the compatible Python interpreter selected for
 that file:
 
 ```text
-<selected-python> <path-to-this-skill>/scripts/get_imports.py <class_name>
+<selected-python> <path-to-this-skill>/scripts/get_imports.py <symbol_name> [--package <package_root> ...]
 ```
 
 **If no file was named:**
 Run the script with the active Python interpreter first:
 
 ```text
-python <path-to-this-skill>/scripts/get_imports.py <class_name>
+python <path-to-this-skill>/scripts/get_imports.py <symbol_name> [--package <package_root> ...]
 ```
 
 If no match is found, repeat the search in other available

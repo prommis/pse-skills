@@ -7,14 +7,23 @@
 #####################################################################################################
 
 """
-Find import statements for classes or functions in installed packages.
+Find import statements for public symbols in installed packages.
+
+This includes classes, functions, and public module-level configuration
+objects. Test and fixture namespaces are excluded.
 
 With no --package arguments, search the supported process-modeling package
 families. Callers can provide one or more --package arguments to limit or
 extend the search.
 
+Accepts one or more symbol names in a single call. Each installed package
+root is walked only once per invocation, regardless of how many symbols are
+requested, so multiple related lookups should be batched into one call
+instead of one process per symbol.
+
 Usage:
     python get_imports.py SYMBOL
+    python get_imports.py SYMBOL_A SYMBOL_B SYMBOL_C
     python get_imports.py SYMBOL --package PACKAGE
     python get_imports.py SYMBOL --package PACKAGE --package PACKAGE
 """
@@ -22,6 +31,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from collections.abc import Sequence
 import contextlib
 from functools import lru_cache
 import importlib
@@ -29,7 +39,6 @@ import inspect
 import io
 import logging
 import pkgutil
-from collections.abc import Sequence
 import warnings
 
 
@@ -40,6 +49,23 @@ DEFAULT_PACKAGE_ROOTS = (
     "pyomo",
     "idaes_fi",
 )
+
+TEST_ONLY_SEGMENTS = {
+    "test",
+    "tests",
+    "testing",
+    "fixture",
+    "fixtures",
+}
+
+
+def is_test_only_module(module_name: str) -> bool:
+    """Return whether a module belongs to a test or fixture namespace."""
+    return any(
+        segment.lower() in TEST_ONLY_SEGMENTS
+        or segment.lower().startswith("test_")
+        for segment in module_name.split(".")
+    )
 
 
 warnings.filterwarnings("ignore")
@@ -73,11 +99,6 @@ def walk_modules_quietly(package_path, prefix: str):
             )
 
 
-def is_supported_symbol(obj: object) -> bool:
-    """Return whether an object is an importable class or function."""
-    return inspect.isclass(obj) or inspect.isfunction(obj)
-
-
 def get_preferred_import(
     symbol_name: str,
     defining_module: str,
@@ -88,6 +109,9 @@ def get_preferred_import(
 
     for length in range(1, len(parts) + 1):
         module_path = ".".join(parts[:length])
+
+        if is_test_only_module(module_path):
+            continue
 
         try:
             module = import_quietly(module_path)
@@ -109,7 +133,10 @@ def inspect_module(
     module_name: str,
     symbol_name: str,
 ) -> str | None:
-    """Return an import when a module defines the requested symbol."""
+    """Return an import when a module publicly exposes the requested symbol."""
+    if is_test_only_module(module_name) or symbol_name.startswith("_"):
+        return None
+
     try:
         module = import_quietly(module_name)
     except Exception:
@@ -120,41 +147,46 @@ def inspect_module(
 
     obj = getattr(module, symbol_name)
 
-    if not is_supported_symbol(obj):
+    if inspect.ismodule(obj):
         return None
 
-    defining_module = getattr(obj, "__module__", None)
+    if inspect.isclass(obj) or inspect.isfunction(obj):
+        defining_module = getattr(obj, "__module__", None)
 
-    if not defining_module or defining_module != module_name:
-        return None
+        if not defining_module or defining_module != module_name:
+            return None
 
-    return get_preferred_import(
-        symbol_name=symbol_name,
-        defining_module=defining_module,
-        target_object=obj,
-    )
+        return get_preferred_import(
+            symbol_name=symbol_name,
+            defining_module=defining_module,
+            target_object=obj,
+        )
+
+    # Public module-level configuration objects are also importable.
+    return f"from {module_name} import {symbol_name}"
 
 
 def search_package(
     package_name: str,
-    symbol_name: str,
-) -> list[str]:
-    """Search one installed package for a class or function."""
+    symbol_names: Sequence[str],
+) -> dict[str, list[str]]:
+    """Search one installed package for multiple public symbols in a single walk."""
+    results: dict[str, list[str]] = {name: [] for name in symbol_names}
+
     try:
         package = import_quietly(package_name)
     except Exception:
-        return []
+        return results
 
     package_path = getattr(package, "__path__", None)
 
     if package_path is None:
-        return []
+        return results
 
-    matches: list[str] = []
-
-    root_match = inspect_module(package_name, symbol_name)
-    if root_match is not None:
-        matches.append(root_match)
+    for symbol_name in symbol_names:
+        root_match = inspect_module(package_name, symbol_name)
+        if root_match is not None:
+            results[symbol_name].append(root_match)
 
     modules = walk_modules_quietly(
         package_path=package_path,
@@ -164,25 +196,26 @@ def search_package(
     for module_info in modules:
         module_name = module_info.name
 
-        if "tests" in module_name.split("."):
+        if is_test_only_module(module_name):
             continue
 
-        match = inspect_module(module_name, symbol_name)
+        for symbol_name in symbol_names:
+            match = inspect_module(module_name, symbol_name)
+            if match is not None and match not in results[symbol_name]:
+                results[symbol_name].append(match)
 
-        if match is not None and match not in matches:
-            matches.append(match)
-
-    return matches
+    return results
 
 
 def build_parser() -> argparse.ArgumentParser:
     """Create the command-line parser."""
     parser = argparse.ArgumentParser(
-        description="Find import paths for an installed class or function."
+        description="Find import paths for one or more installed public symbols."
     )
     parser.add_argument(
-        "symbol_name",
-        help="Exact, case-sensitive class or function name to locate",
+        "symbol_names",
+        nargs="+",
+        help="One or more exact, case-sensitive public symbol names to locate",
     )
     parser.add_argument(
         "--package",
@@ -197,18 +230,20 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def find_imports(
-    symbol_name: str,
+    symbol_names: Sequence[str],
     packages: Sequence[str],
-) -> list[str]:
-    """Search package roots and return unique import statements."""
-    matches: list[str] = []
+) -> dict[str, list[str]]:
+    """Search package roots and return unique import statements per symbol."""
+    results: dict[str, list[str]] = {name: [] for name in symbol_names}
 
     for package_name in packages:
-        for match in search_package(package_name, symbol_name):
-            if match not in matches:
-                matches.append(match)
+        package_matches = search_package(package_name, symbol_names)
+        for symbol_name, matches in package_matches.items():
+            for match in matches:
+                if match not in results[symbol_name]:
+                    results[symbol_name].append(match)
 
-    return matches
+    return results
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -218,33 +253,38 @@ def main(argv: Sequence[str] | None = None) -> int:
     packages = args.packages or list(DEFAULT_PACKAGE_ROOTS)
     packages = list(dict.fromkeys(packages))
 
-    matches = find_imports(
-        symbol_name=args.symbol_name,
+    symbol_names = list(dict.fromkeys(args.symbol_names))
+
+    results = find_imports(
+        symbol_names=symbol_names,
         packages=packages,
     )
 
-    if not matches:
-        print(f"No match found for '{args.symbol_name}'.")
-        print("Searched package roots:")
+    exit_code = 0
 
+    for symbol_name in symbol_names:
+        matches = results[symbol_name]
+        print(f"## {symbol_name}")
+
+        if not matches:
+            print(f"No match found for '{symbol_name}'.")
+            exit_code = 1
+        elif len(matches) == 1:
+            print("Found 1 match:")
+            print(matches[0])
+        else:
+            print(f"Found {len(matches)} matches:")
+            for index, match in enumerate(matches, start=1):
+                print(f"  {index}. {match}")
+
+        print()
+
+    if exit_code:
+        print("Searched package roots:")
         for package_name in packages:
             print(f"  - {package_name}")
 
-        return 1
-
-    if len(matches) == 1:
-        print("Found 1 match:")
-        print()
-        print(matches[0])
-        return 0
-
-    print(f"Found {len(matches)} matches:")
-    print()
-
-    for index, match in enumerate(matches, start=1):
-        print(f"  {index}. {match}")
-
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":
