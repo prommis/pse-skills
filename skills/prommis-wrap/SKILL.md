@@ -71,12 +71,13 @@ decorator order do not.
 
 **@FS.step**: decorator placed above a function to label it as a
 named step so the inspector knows about it. Step names must be valid
-for the installed idaes-fi version. Run `fi-steps --format text` in
-the terminal to get the current list. If it is unavailable in the
-current shell, run
-`conda run -n <detected-environment> fi-steps --format text`.
-Use the output only to validate names, not to choose execution order.
-Do not ask the user to run either command.
+for the installed idaes-fi version.
+Use the constants defined in `idaes_fi.structfs.common.Steps` to
+provide the names. The `index` attribute in that class
+shows the default order of steps. If you need to
+change the order of steps, provide the names (using the constants)
+explicitly to the `FlowsheetRunner` class constructor; otherwise, do not
+provide the step names explicitly when constructing the `FlowsheetRunner` object.
 
 **Context**: shared object passed between steps so they can all
 access the model, solver, and results.
@@ -108,10 +109,13 @@ Use these rules:
 - otherwise, if it imports `prommis`, `idaes_fi`, or plain `idaes`,
   use `idaes-fi`
 
-Run `fi-steps --format text` in the terminal to get the valid step
-names for the installed version before naming any steps in the plan.
-If it is unavailable, run it through the detected conda environment.
-Treat the result as a set of allowed names only.
+Use the constants defined in `idaes_fi.structfs.common.Steps` to
+get step names. Look at the `index` attribute in that class
+shows the default order of steps. If you need to
+change the order of steps, provide the names (using the constants)
+explicitly to the `FlowsheetRunner` class constructor; otherwise, do not
+provide the step names explicitly when constructing the `FlowsheetRunner` object.
+Do not invent new step names that are not in the Steps enumeration.
 
 Derive runtime order from the original `if __name__ == "__main__"`
 block and the orchestration function it calls. If the entry point is
@@ -128,9 +132,8 @@ Always announce: "Stage 2 wrapping plan."
 
 Show the user a wrapping plan before touching anything. The plan
 must list every item that will appear in the wrapped file:
-- imports and runner setup with the derived execution order encoded
-  in an explicit `steps=(...)` sequence
-- every @FS.step function with its step name
+- imports and runner setup 
+- every @FS.step function with its step name, using an attribute from the `idaes_fi.structfs.common.Steps` enumeration.
 - every plain helper function
 - the __main__ block
 
@@ -138,7 +141,7 @@ Show the derived execution order immediately below the plan table as
 plan information. Do not count it as a separate writable item because
 the same order is already encoded in the runner-setup item.
 
-If no valid step name accurately describes an original phase, choose
+If no valid step accurately describes an original phase, choose
 the closest valid name from the phase behavior. Show it as a
 recommended compatibility mapping with one plain-language explanation
 in the normal plan. Do not ask the user to design the mapping, and
@@ -171,18 +174,14 @@ In one-shot mode, the approved plan is the content confirmation.
 Write the complete wrapped file in one pass without asking for
 item-by-item confirmations, then run the full verification checklist.
 
-Always instantiate the runner with the exact approved order:
-`FS = FlowsheetRunner(steps=(...))` or
-`_FS = FlowsheetRunner(steps=(...))`. Keep `build` first, place the
-wrapper-only `set_solver` at the original initial-solver setup
+Use the default step order, unless the order in the flowsheet
+is different. 
+For the default order, instantiate with `FS = FlowsheetRunner()`
+If the order is different, add the `steps` keyword to the constructor to explicitly
+list the steps in the desired order. Keep `Steps.build` first, place the
+wrapper-only `Steps.set_solver` at the original initial-solver setup
 boundary before its consuming solve, and preserve the relative order
-of all original model-processing phases. Never use bare
-`FlowsheetRunner()` for a multi-step wrapped flowsheet.
-
-While wrapping each @FS.step function, immediately check the step
-name against fi-steps output before sending the response. Fix it
-if it's not valid; do not wait until stage 3. Name validation must
-not change the approved execution order.
+of all original model-processing phases.
 
 Once the plan and mode are confirmed and the filename is known,
 announce: "Stage 2 wrapping in progress."
